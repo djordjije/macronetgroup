@@ -1,0 +1,99 @@
+;WITH CTE AS
+(
+SELECT
+si.ItemNumber AS [SKU],
+si.ItemTitle AS [Title],
+si.Weight AS [Weight],
+CONVERT(VARCHAR(8), si.CreationDate, 1) AS [DateCreated],
+si.PurchasePrice AS [PurchasePrice],
+CONVERT(VARCHAR(8), DATEADD(day,-(DATEDIFF("d",o.dReceievedDate, GETDATE())), GETDATE()), 1) AS [Date Last Sold],
+row_number() over (PARTITION BY si.ItemNumber, si.RetailPrice 
+ORDER BY o.dReceievedDate DESC) rn,
+oi.fpricePerUnit AS [LastSoldPrice], si.RetailPrice AS [MSRP],
+sl.Quantity AS [InventoryLevel], 
+CONVERT(VARCHAR(8), p.LastChangeDate, 1) AS [Last Price Update]
+FROM [Order] o
+INNER JOIN OrderItem oi 
+on o.pkOrderID = oi.fkOrderID
+LEFT OUTER JOIN StockItem si 
+on si.pkstockItemId = oi.fkStockItemID_processed
+LEFT OUTER JOIN StockLevel sl on si.pkStockItemID = sl.fkStockItemId
+INNER JOIN StockItem_Pricing p on si.pkStockItemID = p.fkStockItemId
+WHERE si.bLogicalDelete = 0 
+),
+UPCS AS
+(
+SELECT DISTINCT si.ItemNumber AS 'SKU', si.ItemTitle AS 'Title', siep.ProperyValue AS 'UPC'
+FROM StockItem si
+LEFT OUTER JOIN StockItem_ExtendedProperties siep on si.pkStockItemID = siep.fkStockItemId
+WHERE si.bLogicalDelete=0 AND siep.ProperyName LIKE 'UPC'
+),
+
+MPNS AS
+(
+SELECT DISTINCT si.ItemNumber AS 'SKU', si.ItemTitle AS 'Title', siep.ProperyValue AS 'Model'
+FROM StockItem si
+LEFT OUTER JOIN StockItem_ExtendedProperties siep on si.pkStockItemID = siep.fkStockItemId
+WHERE si.bLogicalDelete=0 AND siep.ProperyName LIKE 'Model'
+),
+SIXTY AS
+(
+SELECT si.ItemNumber AS [SKU], count(o.norderID) AS [# of orders]
+FROM [Order] o
+INNER JOIN OrderItem oi on o.pkOrderID = oi.fkOrderID 
+LEFT OUTER JOIN StockItem si on si.pkstockItemId = oi.fkStockItemID_processed
+WHERE o.dReceievedDate > DATEADD(day, -60, GETDATE())
+GROUP BY si.ItemNumber
+),
+THIRTY AS
+(
+SELECT si.ItemNumber AS [SKU], count(o.norderID) AS [# of orders]
+FROM [Order] o
+INNER JOIN OrderItem oi on o.pkOrderID = oi.fkOrderID 
+LEFT OUTER JOIN StockItem si on si.pkstockItemId = oi.fkStockItemID_processed
+WHERE o.dReceievedDate > DATEADD(day, -30, GETDATE())
+GROUP BY si.ItemNumber
+),
+FIFTEEN AS
+(
+SELECT si.ItemNumber AS [SKU], count(o.norderID) AS [# of orders]
+FROM [Order] o
+INNER JOIN OrderItem oi on o.pkOrderID = oi.fkOrderID 
+LEFT OUTER JOIN StockItem si on si.pkstockItemId = oi.fkStockItemID_processed
+WHERE o.dReceievedDate > DATEADD(day, -15, GETDATE())
+GROUP BY si.ItemNumber
+),
+SEVEN AS
+(
+SELECT si.ItemNumber AS [SKU], count(o.norderID) AS [# of orders]
+FROM [Order] o
+INNER JOIN OrderItem oi on o.pkOrderID = oi.fkOrderID 
+LEFT OUTER JOIN StockItem si on si.pkstockItemId = oi.fkStockItemID_processed
+WHERE o.dReceievedDate > DATEADD(day, -7, GETDATE())
+GROUP BY si.ItemNumber
+),
+COST AS
+(
+SELECT si.ItemNumber AS 'SKU', 
+CASE
+WHEN sl.Quantity > 0 THEN sl.CurrentStockValue / sl.Quantity
+WHEN sl.Quantity = 0 THEN 0
+END AS 'Item Cost'
+FROM StockItem si
+LEFT OUTER JOIN StockLevel sl on si.pkStockItemID = sl.fkStockitemId
+WHERE si.bLogicalDelete = 0 	
+)
+
+SELECT DISTINCT CTE.SKU, CTE.Title, UPCS.UPC AS 'UPC', MPNS.Model AS 'MPN', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
+of orders] AS [Sold 1-15], THIRTY.[# of orders] AS [Sold 1-30], SIXTY.[# of orders] AS [Sold 1-60],
+CTE.[Date Last Sold], CTE.LastSoldPrice, CTE.Weight, CTE.InventoryLevel, COST.[Item Cost],  CTE.MSRP, CTE.DateCreated,
+CTE.[Last Price Update] 
+FROM CTE 
+LEFT OUTER JOIN UPCS on CTE.SKU = UPCS.SKU 
+LEFT OUTER JOIN MPNS on CTE.SKU = MPNS.SKU
+LEFT OUTER JOIN SIXTY on CTE.SKU = SIXTY.SKU 
+LEFT OUTER JOIN THIRTY on CTE.SKU = THIRTY.SKU 
+LEFT OUTER JOIN FIFTEEN on CTE.SKU = FIFTEEN.SKU 
+LEFT OUTER JOIN SEVEN on CTE.SKU = SEVEN.SKU 
+LEFT OUTER JOIN COST on CTE.SKU = COST.SKU 
+WHERE rn = 1 
