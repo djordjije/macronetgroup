@@ -80,6 +80,39 @@ FROM StockItem si
 LEFT OUTER JOIN StockLevel sl on si.pkStockItemID = sl.fkStockitemId
 WHERE si.bLogicalDelete = 0 	
 ),
+PO7 AS 
+(
+SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO 1-7' 
+FROM StockItem si
+LEFT OUTER JOIN PurchaseItem pi on si.pkStockItemID = pi.fkStockItemId
+LEFT OUTER JOIN Purchase p on pi.fkPurchasId = p.pkPurchaseID
+WHERE si.bLogicalDelete = 0 
+AND pi.Quantity > 0 
+AND p.DateOfDelivery >  DATEADD(day, -7, GETDATE())
+GROUP BY si.ItemNumber
+),
+PO15 AS 
+(
+SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO 1-15' 
+FROM StockItem si
+LEFT OUTER JOIN PurchaseItem pi on si.pkStockItemID = pi.fkStockItemId
+LEFT OUTER JOIN Purchase p on pi.fkPurchasId = p.pkPurchaseID
+WHERE si.bLogicalDelete = 0 
+AND pi.Quantity > 0 
+AND p.DateOfDelivery >  DATEADD(day, -15, GETDATE())
+GROUP BY si.ItemNumber
+),
+PO30 AS 
+(
+SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO 1-30' 
+FROM StockItem si
+LEFT OUTER JOIN PurchaseItem pi on si.pkStockItemID = pi.fkStockItemId
+LEFT OUTER JOIN Purchase p on pi.fkPurchasId = p.pkPurchaseID
+WHERE si.bLogicalDelete = 0 
+AND pi.Quantity > 0 
+AND p.DateOfDelivery >  DATEADD(day, -30, GETDATE())
+GROUP BY si.ItemNumber
+),
 PO60 AS 
 (
 SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO 1-60' 
@@ -104,7 +137,7 @@ GROUP BY si.ItemNumber
 
 SELECT DISTINCT CTE.SKU, CTE.Title, UPCS.UPC AS 'UPC', MPNS.Model AS 'MPN', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
 of orders] AS [Sold 1-15], THIRTY.[# of orders] AS [Sold 1-30], SIXTY.[# of orders] AS [Sold 1-60],
-CTE.Weight, CTE.InventoryLevel, PO60.[PO 1-60], POALL.[PO 61+], COST.[Item Cost],  CTE.MSRP, CTE.DateCreated,
+CTE.Weight, CTE.InventoryLevel, PO7.[PO 1-7], PO15.[PO 1-15], PO30.[PO 1-30], PO60.[PO 1-60], POALL.[PO 61+], COST.[Item Cost],  CTE.MSRP, CTE.DateCreated,
 CTE.[Last Price Update] 
 FROM CTE 
 LEFT OUTER JOIN UPCS on CTE.SKU = UPCS.SKU 
@@ -114,5 +147,8 @@ LEFT OUTER JOIN THIRTY on CTE.SKU = THIRTY.SKU
 LEFT OUTER JOIN FIFTEEN on CTE.SKU = FIFTEEN.SKU 
 LEFT OUTER JOIN SEVEN on CTE.SKU = SEVEN.SKU 
 LEFT OUTER JOIN COST on CTE.SKU = COST.SKU 
+LEFT OUTER JOIN PO7 on CTE.SKU = PO7.ItemNumber
+LEFT OUTER JOIN PO15 on CTE.SKU = PO15.ItemNumber
+LEFT OUTER JOIN PO30 on CTE.SKU = PO30.ItemNumber
 LEFT OUTER JOIN PO60 on CTE.SKU = PO60.ItemNumber
 LEFT OUTER JOIN POALL on CTE.SKU = POALL.ItemNumber
