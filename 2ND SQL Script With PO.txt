@@ -133,12 +133,19 @@ LEFT OUTER JOIN Purchase p on pi.fkPurchasId = p.pkPurchaseID
 WHERE si.bLogicalDelete = 0 
 AND pi.Quantity > 0 
 GROUP BY si.ItemNumber
+),
+PRICING AS
+(
+SELECT si.ItemNumber, CONVERT(VARCHAR(8), sip.LastChangeDate, 1) AS [Last Price Update]
+FROM StockItem si
+LEFT OUTER JOIN StockItem_Pricing sip on si.pkStockItemID = sip.fkStockItemID
+WHERE si.bLogicalDelete = 0 AND sip.SubSource = 'EBAY0_US'
 )
 
 SELECT DISTINCT CTE.SKU, CTE.Title, UPCS.UPC AS 'UPC', MPNS.Model AS 'MPN', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
 of orders] AS [Sold 1-15], THIRTY.[# of orders] AS [Sold 1-30], SIXTY.[# of orders] AS [Sold 1-60],
 CTE.Weight, CTE.InventoryLevel, PO7.[PO 1-7], PO15.[PO 1-15], PO30.[PO 1-30], PO60.[PO 1-60], POALL.[PO 61+], COST.[Item Cost],  CTE.MSRP, CTE.DateCreated,
-CTE.[Last Price Update] 
+PRICING.[Last Price Update] 
 FROM CTE 
 LEFT OUTER JOIN UPCS on CTE.SKU = UPCS.SKU 
 LEFT OUTER JOIN MPNS on CTE.SKU = MPNS.SKU
@@ -152,3 +159,4 @@ LEFT OUTER JOIN PO15 on CTE.SKU = PO15.ItemNumber
 LEFT OUTER JOIN PO30 on CTE.SKU = PO30.ItemNumber
 LEFT OUTER JOIN PO60 on CTE.SKU = PO60.ItemNumber
 LEFT OUTER JOIN POALL on CTE.SKU = POALL.ItemNumber
+LEFT OUTER JOIN PRICING on CTE.SKU = PRICING.ItemNumber
