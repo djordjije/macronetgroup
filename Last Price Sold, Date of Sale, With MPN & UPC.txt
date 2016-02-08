@@ -89,11 +89,26 @@ SELECT si.ItemNumber, CONVERT(VARCHAR(8), sip.LastChangeDate, 1) AS [Last Price 
 FROM StockItem si
 LEFT OUTER JOIN StockItem_Pricing sip on si.pkStockItemID = sip.fkStockItemID
 WHERE si.bLogicalDelete = 0 AND sip.SubSource = 'EBAY0_US'
+),
+SC AS 
+(
+SELECT si.ItemNumber AS 'SKU', sl.Quantity, CONVERT(VARCHAR(8), sc.StockChangeDateTime, 1) AS 'ChangeDate', DATEDIFF("d", sc.StockChangeDateTime, 
+	GETDATE()) AS 'Days', sc.StockNow, row_number() over (PARTITION BY sc.fkStockItemId ORDER BY DATEDIFF("d", sc.StockChangeDateTime, GETDATE())) rn
+FROM [StockChange] sc
+LEFT OUTER JOIN StockItem si on sc.fkStockitemId = si.pkStockItemID
+LEFT OUTER JOIN StockLevel sl on si.pkStockitemID = sl.fkStockItemId
+WHERE si.bLogicalDelete = 0 AND sc.StockNow = 0 AND sl.Quantity = 0
+),
+D0S AS
+(
+SELECT SC.SKU, SC.Quantity, SC.Days
+FROM SC
+WHERE rn = 1
 )
 
 SELECT DISTINCT CTE.SKU, CTE.Title, UPCS.UPC AS 'UPC', MPNS.Model AS 'MPN', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
 of orders] AS [Sold 1-15], THIRTY.[# of orders] AS [Sold 1-30], SIXTY.[# of orders] AS [Sold 1-60],
-CTE.[Date Last Sold], CTE.LastSoldPrice, CTE.Weight, CTE.InventoryLevel, COST.[Item Cost],  CTE.MSRP, CTE.DateCreated,
+CTE.[Date Last Sold], CTE.LastSoldPrice, CTE.Weight, CTE.InventoryLevel, COST.[Item Cost],  CTE.MSRP, D0S.Days AS 'Days Out Of Stock', CTE.DateCreated,
 PRICING.[Last Price Update] 
 FROM CTE 
 LEFT OUTER JOIN UPCS on CTE.SKU = UPCS.SKU 
@@ -104,4 +119,5 @@ LEFT OUTER JOIN FIFTEEN on CTE.SKU = FIFTEEN.SKU
 LEFT OUTER JOIN SEVEN on CTE.SKU = SEVEN.SKU 
 LEFT OUTER JOIN COST on CTE.SKU = COST.SKU 
 LEFT OUTER JOIN PRICING ON CTE.SKU = PRICING.ItemNumber
+LEFT OUTER JOIN D0S ON CTE.SKU = D0S.SKU
 WHERE rn = 1 
