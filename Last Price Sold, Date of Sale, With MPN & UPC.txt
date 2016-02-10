@@ -74,10 +74,12 @@ GROUP BY si.ItemNumber
 ),
 PRE_COST AS 
 (
-SELECT si.ItemNumber AS 'SKU', isu.KnownPurchasePrice AS 'Item Cost', row_number() over (PARTITION BY si.ItemNumber ORDER BY isu.KnownPurchasePrice DESC) rn
-FROM StockItem si
-LEFT OUTER JOIN ItemSupplier isu on si.pkStockItemID = isu.fkStockitemId
-WHERE si.bLogicalDelete = 0 	
+SELECT si.ItemNumber AS 'SKU', DATEDIFF("d", p.DateOfDelivery, GETDATE()) AS Days, CASE WHEN pi.Quantity = 0 THEN 0 ELSE pi.Cost/pi.Quantity END AS 'Item Cost', row_number() over (PARTITION BY si.ItemNumber ORDER BY DATEDIFF("d", p.DateOfDelivery, GETDATE()) ) rn
+FROM Purchase p
+LEFT OUTER JOIN PurchaseItem pi ON p.pkPurchaseID = pi.fkPurchasId
+LEFT OUTER JOIN StockItem si on pi.fkStockitemID = si.pkStockitemID
+WHERE si.bLogicalDelete = 0
+
 ),
 COST AS
 (
@@ -88,9 +90,7 @@ WHERE rn = 1
 SIP AS 
 (
 SELECT si.ItemNumber AS 'SKU',
-
 CASE WHEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  < DATEDIFF("d", sip.LastChangeDate, GETDATE())  THEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  ELSE DATEDIFF("d", sip.LastChangeDate, GETDATE()) END AS [Days],
-
 row_number() over (PARTITION BY si.ItemNumber ORDER BY CASE WHEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  < DATEDIFF("d", sip.LastChangeDate, GETDATE())  THEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  ELSE DATEDIFF("d", sip.LastChangeDate, GETDATE()) END ) rn
 FROM StockItem_Pricing sip
 LEFT OUTER JOIN StockItem si on sip.fkStockitemId = si.pkStockItemID
