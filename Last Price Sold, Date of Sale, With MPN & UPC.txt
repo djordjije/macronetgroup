@@ -74,13 +74,9 @@ GROUP BY si.ItemNumber
 ),
 COST AS
 (
-SELECT si.ItemNumber AS 'SKU', 
-CASE
-WHEN sl.Quantity > 0 THEN sl.CurrentStockValue / sl.Quantity
-WHEN sl.Quantity = 0 THEN 0
-END AS 'Item Cost'
+SELECT si.ItemNumber AS 'SKU', isu.KnownPurchasePrice AS 'Item Cost'
 FROM StockItem si
-LEFT OUTER JOIN StockLevel sl on si.pkStockItemID = sl.fkStockitemId
+LEFT OUTER JOIN ItemSupplier isu on si.pkStockItemID = isu.fkStockitemId
 WHERE si.bLogicalDelete = 0 	
 ),
 PRICING AS
