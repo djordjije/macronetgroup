@@ -72,19 +72,32 @@ LEFT OUTER JOIN StockItem si on si.pkstockItemId = oi.fkStockItemID_processed
 WHERE o.dReceievedDate > DATEADD(day, -7, GETDATE())
 GROUP BY si.ItemNumber
 ),
-COST AS
+PRE_COST AS 
 (
-SELECT si.ItemNumber AS 'SKU', isu.KnownPurchasePrice AS 'Item Cost'
+SELECT si.ItemNumber AS 'SKU', isu.KnownPurchasePrice AS 'Item Cost', row_number() over (PARTITION BY si.ItemNumber ORDER BY isu.KnownPurchasePrice DESC) rn
 FROM StockItem si
 LEFT OUTER JOIN ItemSupplier isu on si.pkStockItemID = isu.fkStockitemId
 WHERE si.bLogicalDelete = 0 	
 ),
+COST AS
+(
+SELECT PRE_COST.SKU, PRE_COST.[Item Cost]
+FROM PRE_COST
+WHERE rn = 1
+),
+SIP AS 
+(
+SELECT si.ItemNumber AS 'SKU', sip.SalePrice, sip.ModifiedUserName, CONVERT(VARCHAR(8), sip.LastChangeDate, 1) AS 'ChangeDate', DATEDIFF("d", sip.LastChangeDate, 
+	GETDATE()) AS 'Days', row_number() over (PARTITION BY si.ItemNumber ORDER BY DATEDIFF("d", sip.LastChangeDate, GETDATE())) rn
+FROM StockItem_Pricing sip
+LEFT OUTER JOIN StockItem si on sip.fkStockitemId = si.pkStockItemID
+WHERE si.bLogicalDelete = 0 
+),
 PRICING AS
 (
-SELECT si.ItemNumber, CONVERT(VARCHAR(8), sip.LastChangeDate, 1) AS [Last Price Update]
-FROM StockItem si
-LEFT OUTER JOIN StockItem_Pricing sip on si.pkStockItemID = sip.fkStockItemID
-WHERE si.bLogicalDelete = 0 AND sip.SubSource = 'EBAY0_US'
+SELECT SIP.SKU, SIP.ChangeDate AS [Last Price Update], SIP.Days
+FROM SIP
+WHERE rn = 1
 ),
 SC AS 
 (
@@ -114,6 +127,6 @@ LEFT OUTER JOIN THIRTY on CTE.SKU = THIRTY.SKU
 LEFT OUTER JOIN FIFTEEN on CTE.SKU = FIFTEEN.SKU 
 LEFT OUTER JOIN SEVEN on CTE.SKU = SEVEN.SKU 
 LEFT OUTER JOIN COST on CTE.SKU = COST.SKU 
-LEFT OUTER JOIN PRICING ON CTE.SKU = PRICING.ItemNumber
+LEFT OUTER JOIN PRICING ON CTE.SKU = PRICING.SKU
 LEFT OUTER JOIN D0S ON CTE.SKU = D0S.SKU
 WHERE rn = 1 
