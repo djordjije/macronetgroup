@@ -87,15 +87,18 @@ WHERE rn = 1
 ),
 SIP AS 
 (
-SELECT si.ItemNumber AS 'SKU', sip.SalePrice, sip.ModifiedUserName, CONVERT(VARCHAR(8), sip.LastChangeDate, 1) AS 'ChangeDate', DATEDIFF("d", sip.LastChangeDate, 
-	GETDATE()) AS 'Days', row_number() over (PARTITION BY si.ItemNumber ORDER BY DATEDIFF("d", sip.LastChangeDate, GETDATE())) rn
+SELECT si.ItemNumber AS 'SKU',
+
+CASE WHEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  < DATEDIFF("d", sip.LastChangeDate, GETDATE())  THEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  ELSE DATEDIFF("d", sip.LastChangeDate, GETDATE()) END AS [Days],
+
+row_number() over (PARTITION BY si.ItemNumber ORDER BY CASE WHEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  < DATEDIFF("d", sip.LastChangeDate, GETDATE())  THEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  ELSE DATEDIFF("d", sip.LastChangeDate, GETDATE()) END ) rn
 FROM StockItem_Pricing sip
 LEFT OUTER JOIN StockItem si on sip.fkStockitemId = si.pkStockItemID
-WHERE si.bLogicalDelete = 0 
+WHERE si.bLogicalDelete = 0  
 ),
 PRICING AS
 (
-SELECT SIP.SKU, SIP.ChangeDate AS [Last Price Update], SIP.Days
+SELECT SIP.SKU, SIP.Days AS [Last Price Update]
 FROM SIP
 WHERE rn = 1
 ),
