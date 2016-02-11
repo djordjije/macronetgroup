@@ -4,9 +4,9 @@ SELECT
 si.ItemNumber AS [SKU],
 si.ItemTitle AS [Title],
 si.Weight AS [Weight],
-CONVERT(VARCHAR(8), si.CreationDate, 1) AS [DateCreated],
+DATEDIFF("d", si.CreationDate, GETDATE()) AS [Days Ago Created],
 si.PurchasePrice AS [PurchasePrice],
-CONVERT(VARCHAR(8), DATEADD(day,-(DATEDIFF("d",o.dReceievedDate, GETDATE())), GETDATE()), 1) AS [Date Last Sold],
+DATEDIFF("d",o.dReceievedDate, GETDATE()) AS [Days Last Sold],
 row_number() over (PARTITION BY si.ItemNumber, si.RetailPrice 
 ORDER BY o.dReceievedDate DESC) rn,
 oi.fpricePerUnit AS [LastSoldPrice], si.RetailPrice AS [MSRP],
@@ -120,7 +120,7 @@ WHERE rn = 1
 
 SELECT DISTINCT CTE.SKU, CTE.Title, UPCS.UPC AS 'UPC', MPNS.Model AS 'MPN', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
 of orders] AS [Sold 1-15], THIRTY.[# of orders] AS [Sold 1-30], SIXTY.[# of orders] AS [Sold 1-60],
-CTE.[Date Last Sold], CTE.LastSoldPrice, CTE.Weight, CTE.InventoryLevel, COST.[Item Cost],  CTE.MSRP, D0S.Days AS 'Days Out Of Stock', CTE.DateCreated,
+CTE.[Days Last Sold], CTE.LastSoldPrice, CTE.Weight, CTE.InventoryLevel, COST.[Item Cost],  CTE.MSRP, D0S.Days AS 'Days Out Of Stock', CTE.[Days Ago Created],
 PRICING.[Last Price Update] 
 FROM CTE 
 LEFT OUTER JOIN UPCS on CTE.SKU = UPCS.SKU 
