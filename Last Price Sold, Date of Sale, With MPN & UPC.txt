@@ -109,7 +109,8 @@ SELECT si.ItemNumber AS 'SKU', sl.Quantity, CONVERT(VARCHAR(8), sc.StockChangeDa
 FROM [StockChange] sc
 LEFT OUTER JOIN StockItem si on sc.fkStockitemId = si.pkStockItemID
 LEFT OUTER JOIN StockLevel sl on si.pkStockitemID = sl.fkStockItemId
-WHERE si.bLogicalDelete = 0 AND sc.StockNow = 0 AND sl.Quantity = 0
+LEFT OUTER JOIN StockLocation sloc on sl.fkStockLocationId = sloc.pkStockLocationId
+WHERE si.bLogicalDelete = 0 AND sc.StockNow = 0 AND sl.Quantity = 0 AND sloc.Location = 'Default'
 ),
 D0S AS
 (
@@ -132,4 +133,4 @@ LEFT OUTER JOIN SEVEN on CTE.SKU = SEVEN.SKU
 LEFT OUTER JOIN COST on CTE.SKU = COST.SKU 
 LEFT OUTER JOIN PRICING ON CTE.SKU = PRICING.SKU
 LEFT OUTER JOIN D0S ON CTE.SKU = D0S.SKU
-WHERE rn = 1 
+WHERE rn = 1
