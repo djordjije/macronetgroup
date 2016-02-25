@@ -156,7 +156,7 @@ FROM SIP
 WHERE rn = 1
 )
 
-SELECT DISTINCT CTE.SKU, CTE.Title, UPCS.UPC AS 'UPC', MPNS.Model AS 'MPN', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
+SELECT DISTINCT CTE.SKU, CTE.Title, MPNS.Model AS 'MPN', UPCS.UPC AS 'UPC', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
 of orders] AS [Sold 1-15], THIRTY.[# of orders] AS [Sold 1-30], SIXTY.[# of orders] AS [Sold 1-60],
 CTE.Weight, CTE.InventoryLevel, PO7.[PO 1-7], PO15.[PO 1-15], PO30.[PO 1-30], PO60.[PO 1-60], POALL.[PO 61+], COST.[Item Cost],  CTE.MSRP, CTE.[Days Ago Created],
 PRICING.[Last Price Update] 
