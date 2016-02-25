@@ -119,7 +119,7 @@ FROM SC
 WHERE rn = 1
 )
 
-SELECT DISTINCT CTE.SKU, CTE.Title, UPCS.UPC AS 'UPC', MPNS.Model AS 'MPN', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
+SELECT DISTINCT CTE.SKU, CTE.Title, MPNS.Model AS 'MPN', UPCS.UPC AS 'UPC', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
 of orders] AS [Sold 1-15], THIRTY.[# of orders] AS [Sold 1-30], SIXTY.[# of orders] AS [Sold 1-60],
 CTE.[Days Last Sold], CTE.LastSoldPrice, CTE.Weight, CTE.InventoryLevel, COST.[Item Cost],  CTE.MSRP, D0S.Days AS 'Days Out Of Stock', CTE.[Days Ago Created],
 PRICING.[Last Price Update] 
@@ -133,4 +133,4 @@ LEFT OUTER JOIN SEVEN on CTE.SKU = SEVEN.SKU
 LEFT OUTER JOIN COST on CTE.SKU = COST.SKU 
 LEFT OUTER JOIN PRICING ON CTE.SKU = PRICING.SKU
 LEFT OUTER JOIN D0S ON CTE.SKU = D0S.SKU
-WHERE rn = 1
+WHERE rn = 1 
