@@ -4,7 +4,7 @@ SELECT
 si.ItemNumber AS [SKU],
 si.ItemTitle AS [Title],
 si.Weight AS [Weight],
-CONVERT(VARCHAR(8), si.CreationDate, 1) AS [DateCreated],
+DATEDIFF("d", si.CreationDate, GETDATE()) AS [Days Ago Created],
 si.PurchasePrice AS [PurchasePrice],
 oi.fpricePerUnit AS [LastSoldPrice], si.RetailPrice AS [MSRP],
 sl.Quantity AS [InventoryLevel], 
@@ -158,7 +158,7 @@ WHERE rn = 1
 
 SELECT DISTINCT CTE.SKU, CTE.Title, UPCS.UPC AS 'UPC', MPNS.Model AS 'MPN', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
 of orders] AS [Sold 1-15], THIRTY.[# of orders] AS [Sold 1-30], SIXTY.[# of orders] AS [Sold 1-60],
-CTE.Weight, CTE.InventoryLevel, PO7.[PO 1-7], PO15.[PO 1-15], PO30.[PO 1-30], PO60.[PO 1-60], POALL.[PO 61+], COST.[Item Cost],  CTE.MSRP, CTE.DateCreated,
+CTE.Weight, CTE.InventoryLevel, PO7.[PO 1-7], PO15.[PO 1-15], PO30.[PO 1-30], PO60.[PO 1-60], POALL.[PO 61+], COST.[Item Cost],  CTE.MSRP, CTE.[Days Ago Created],
 PRICING.[Last Price Update] 
 FROM CTE 
 LEFT OUTER JOIN UPCS on CTE.SKU = UPCS.SKU 
