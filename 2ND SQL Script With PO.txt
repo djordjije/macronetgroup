@@ -86,7 +86,7 @@ WHERE rn = 1
 ),
 PO7 AS 
 (
-SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO 1-7' 
+SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO1-7' 
 FROM StockItem si
 LEFT OUTER JOIN PurchaseItem pi on si.pkStockItemID = pi.fkStockItemId
 LEFT OUTER JOIN Purchase p on pi.fkPurchasId = p.pkPurchaseID
@@ -97,7 +97,7 @@ GROUP BY si.ItemNumber
 ),
 PO15 AS 
 (
-SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO 1-15' 
+SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO1-15' 
 FROM StockItem si
 LEFT OUTER JOIN PurchaseItem pi on si.pkStockItemID = pi.fkStockItemId
 LEFT OUTER JOIN Purchase p on pi.fkPurchasId = p.pkPurchaseID
@@ -108,7 +108,7 @@ GROUP BY si.ItemNumber
 ),
 PO30 AS 
 (
-SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO 1-30' 
+SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO1-30' 
 FROM StockItem si
 LEFT OUTER JOIN PurchaseItem pi on si.pkStockItemID = pi.fkStockItemId
 LEFT OUTER JOIN Purchase p on pi.fkPurchasId = p.pkPurchaseID
@@ -119,7 +119,7 @@ GROUP BY si.ItemNumber
 ),
 PO60 AS 
 (
-SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO 1-60' 
+SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO1-60' 
 FROM StockItem si
 LEFT OUTER JOIN PurchaseItem pi on si.pkStockItemID = pi.fkStockItemId
 LEFT OUTER JOIN Purchase p on pi.fkPurchasId = p.pkPurchaseID
@@ -130,36 +130,19 @@ GROUP BY si.ItemNumber
 ),
 POALL AS 
 (
-SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO 61+' 
+SELECT si.ItemNumber, SUM(pi.Quantity) AS 'PO61+' 
 FROM StockItem si
 LEFT OUTER JOIN PurchaseItem pi on si.pkStockItemID = pi.fkStockItemId
 LEFT OUTER JOIN Purchase p on pi.fkPurchasId = p.pkPurchaseID
 WHERE si.bLogicalDelete = 0 
 AND pi.Quantity > 0 
 GROUP BY si.ItemNumber
-),
-SIP AS 
-(
-SELECT si.ItemNumber AS 'SKU',
-
-CASE WHEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  < DATEDIFF("d", sip.LastChangeDate, GETDATE())  THEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  ELSE DATEDIFF("d", sip.LastChangeDate, GETDATE()) END AS [Days],
-
-row_number() over (PARTITION BY si.ItemNumber ORDER BY CASE WHEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  < DATEDIFF("d", sip.LastChangeDate, GETDATE())  THEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  ELSE DATEDIFF("d", sip.LastChangeDate, GETDATE()) END ) rn
-FROM StockItem_Pricing sip
-LEFT OUTER JOIN StockItem si on sip.fkStockitemId = si.pkStockItemID
-WHERE si.bLogicalDelete = 0  
-),
-PRICING AS
-(
-SELECT SIP.SKU, SIP.Days AS [Last Price Update]
-FROM SIP
-WHERE rn = 1
 )
 
-SELECT DISTINCT CTE.SKU, CTE.Title, MPNS.Model AS 'MPN', UPCS.UPC AS 'UPC', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
-of orders] AS [Sold 1-15], THIRTY.[# of orders] AS [Sold 1-30], SIXTY.[# of orders] AS [Sold 1-60],
-CTE.Weight, CTE.InventoryLevel, PO7.[PO 1-7], PO15.[PO 1-15], PO30.[PO 1-30], PO60.[PO 1-60], POALL.[PO 61+], COST.[Item Cost],  CTE.MSRP, CTE.[Days Ago Created],
-PRICING.[Last Price Update] 
+SELECT DISTINCT CTE.SKU, CTE.Title, MPNS.Model AS 'MPN', UPCS.UPC AS 'UPC', SEVEN.[# of orders] AS [Sold1-7], FIFTEEN.[#
+of orders] AS [Sold1-15], THIRTY.[# of orders] AS [Sold1-30], SIXTY.[# of orders] AS [Sold1-60],
+CTE.Weight, CTE.InventoryLevel AS 'Available', PO7.[PO1-7], PO15.[PO1-15], PO30.[PO1-30], PO60.[PO1-60], POALL.[PO61+], COST.[Item Cost] AS 'UnitCost',  
+CTE.MSRP AS 'RetailPrice', CTE.[Days Ago Created] AS 'DaysAgoCreated'
 FROM CTE 
 LEFT OUTER JOIN UPCS on CTE.SKU = UPCS.SKU 
 LEFT OUTER JOIN MPNS on CTE.SKU = MPNS.SKU
@@ -173,4 +156,3 @@ LEFT OUTER JOIN PO15 on CTE.SKU = PO15.ItemNumber
 LEFT OUTER JOIN PO30 on CTE.SKU = PO30.ItemNumber
 LEFT OUTER JOIN PO60 on CTE.SKU = PO60.ItemNumber
 LEFT OUTER JOIN POALL on CTE.SKU = POALL.ItemNumber
-LEFT OUTER JOIN PRICING on CTE.SKU = PRICING.SKU
