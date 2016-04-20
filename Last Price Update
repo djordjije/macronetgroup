@@ -1,0 +1,12 @@
+;WITH SIP AS 
+(
+SELECT si.ItemNumber AS 'SKU',
+CASE WHEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  < DATEDIFF("d", sip.LastChangeDate, GETDATE())  THEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  ELSE DATEDIFF("d", sip.LastChangeDate, GETDATE()) END AS [Days],
+row_number() over (PARTITION BY si.ItemNumber ORDER BY CASE WHEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  < DATEDIFF("d", sip.LastChangeDate, GETDATE())  THEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  ELSE DATEDIFF("d", sip.LastChangeDate, GETDATE()) END ) rn
+FROM StockItem_Pricing sip
+LEFT OUTER JOIN StockItem si on sip.fkStockitemId = si.pkStockItemID
+WHERE si.bLogicalDelete = 0  
+)
+SELECT SIP.SKU, SIP.Days AS [Last Price Update]
+FROM SIP
+WHERE rn = 1
