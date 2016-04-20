@@ -1,3 +1,6 @@
+===============================================================================================================
+BAD MOFO SCRIPT
+===============================================================================================================
 ;WITH CTE AS
 (
 SELECT
@@ -86,43 +89,11 @@ COST AS
 SELECT PRE_COST.SKU, PRE_COST.[Item Cost]
 FROM PRE_COST
 WHERE rn = 1
-),
-SIP AS 
-(
-SELECT si.ItemNumber AS 'SKU',
-CASE WHEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  < DATEDIFF("d", sip.LastChangeDate, GETDATE())  THEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  ELSE DATEDIFF("d", sip.LastChangeDate, GETDATE()) END AS [Days],
-row_number() over (PARTITION BY si.ItemNumber ORDER BY CASE WHEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  < DATEDIFF("d", sip.LastChangeDate, GETDATE())  THEN DATEDIFF("d", sip.ModifiedDate, GETDATE())  ELSE DATEDIFF("d", sip.LastChangeDate, GETDATE()) END ) rn
-FROM StockItem_Pricing sip
-LEFT OUTER JOIN StockItem si on sip.fkStockitemId = si.pkStockItemID
-WHERE si.bLogicalDelete = 0  
-),
-PRICING AS
-(
-SELECT SIP.SKU, SIP.Days AS [Last Price Update]
-FROM SIP
-WHERE rn = 1
-),
-SC AS 
-(
-SELECT si.ItemNumber AS 'SKU', sl.Quantity, CONVERT(VARCHAR(8), sc.StockChangeDateTime, 1) AS 'ChangeDate', DATEDIFF("d", sc.StockChangeDateTime, 
-	GETDATE()) AS 'Days', sc.StockNow, row_number() over (PARTITION BY sc.fkStockItemId ORDER BY DATEDIFF("d", sc.StockChangeDateTime, GETDATE())) rn
-FROM [StockChange] sc
-LEFT OUTER JOIN StockItem si on sc.fkStockitemId = si.pkStockItemID
-LEFT OUTER JOIN StockLevel sl on si.pkStockitemID = sl.fkStockItemId
-LEFT OUTER JOIN StockLocation sloc on sl.fkStockLocationId = sloc.pkStockLocationId
-WHERE si.bLogicalDelete = 0 AND sc.StockNow = 0 AND sl.Quantity = 0 AND sloc.Location = 'Default'
-),
-D0S AS
-(
-SELECT SC.SKU, SC.Quantity, SC.Days
-FROM SC
-WHERE rn = 1
 )
 
 SELECT DISTINCT CTE.SKU, CTE.Title, MPNS.Model AS 'MPN', UPCS.UPC AS 'UPC', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
-of orders] AS [Sold 1-15], THIRTY.[# of orders] AS [Sold 1-30], SIXTY.[# of orders] AS [Sold 1-60],
-CTE.[Days Last Sold], CTE.LastSoldPrice, CTE.Weight, CTE.InventoryLevel, COST.[Item Cost],  CTE.MSRP, D0S.Days AS 'Days Out Of Stock', CTE.[Days Ago Created],
-PRICING.[Last Price Update] 
+of orders] AS [Sold1-15], THIRTY.[# of orders] AS [Sold1-30], SIXTY.[# of orders] AS [Sold1-60],
+CTE.[Days Last Sold] AS 'DaysLastSold', CTE.LastSoldPrice, CTE.Weight, CTE.InventoryLevel AS 'Available', COST.[Item Cost] AS 'UnitCost',  CTE.MSRP AS 'RetailPrice', CTE.[Days Ago Created] AS 'DaysAgoCreated'
 FROM CTE 
 LEFT OUTER JOIN UPCS on CTE.SKU = UPCS.SKU 
 LEFT OUTER JOIN MPNS on CTE.SKU = MPNS.SKU
@@ -131,6 +102,4 @@ LEFT OUTER JOIN THIRTY on CTE.SKU = THIRTY.SKU
 LEFT OUTER JOIN FIFTEEN on CTE.SKU = FIFTEEN.SKU 
 LEFT OUTER JOIN SEVEN on CTE.SKU = SEVEN.SKU 
 LEFT OUTER JOIN COST on CTE.SKU = COST.SKU 
-LEFT OUTER JOIN PRICING ON CTE.SKU = PRICING.SKU
-LEFT OUTER JOIN D0S ON CTE.SKU = D0S.SKU
 WHERE rn = 1 
