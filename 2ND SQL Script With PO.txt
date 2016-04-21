@@ -15,7 +15,7 @@ on o.pkOrderID = oi.fkOrderID
 LEFT OUTER JOIN StockItem si 
 on si.pkstockItemId = oi.fkStockItemID_processed
 LEFT OUTER JOIN StockLevel sl on si.pkStockItemID = sl.fkStockItemId
-INNER JOIN StockItem_Pricing p on si.pkStockItemID = p.fkStockItemId
+LEFT OUTER JOIN StockItem_Pricing p on si.pkStockItemID = p.fkStockItemId
 WHERE si.bLogicalDelete = 0 
 ),
 UPCS AS
