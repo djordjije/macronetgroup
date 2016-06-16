@@ -1,0 +1,42 @@
+;WITH EBAYLIST AS 
+(
+SELECT scs.ChannelSKU, scs.Source
+FROM [Stock_ChannelSKU] scs
+WHERE scs.Source = 'EBAY'
+),
+BCLIST AS
+(
+SELECT scs.ChannelSKU, scs.Source
+FROM [Stock_ChannelSKU] scs
+WHERE scs.Source = 'BIGCOMMERCE'
+),
+AZNLIST AS
+(
+SELECT scs.ChannelSKU, scs.Source
+FROM [Stock_ChannelSKU] scs
+WHERE scs.Source = 'AMAZON'
+),
+BRAND AS
+(
+SELECT DISTINCT si.ItemNumber AS 'SKU', siep.ProperyValue AS 'Brand'
+FROM StockItem si
+LEFT OUTER JOIN StockItem_ExtendedProperties siep on si.pkStockItemID = siep.fkStockItemId
+WHERE si.bLogicalDelete=0 AND siep.ProperyName LIKE 'Brand'
+),
+FIN AS
+(
+SELECT si.ItemNumber AS 'SKU', si.ItemTitle AS 'Title', BRAND.Brand, sl.Quantity, EBAYLIST.Source AS 'EBAY', BCLIST.Source AS 'BC', AZNLIST.Source AS 'AMAZON'
+FROM StockItem si
+LEFT OUTER JOIN StockLevel sl on si.pkStockItemID = sl.fkStockItemId
+LEFT OUTER JOIN EBAYLIST on si.ItemNumber = EBAYLIST.ChannelSKU
+LEFT OUTER JOIN BCLIST on si.ItemNumber = BCLIST.ChannelSKU
+LEFT OUTER JOIN AZNLIST on si.ItemNumber = AZNLIST.ChannelSKU
+INNER JOIN BRAND on si.ItemNumber = BRAND.SKU
+LEFT OUTER JOIN StockLocation sloc on sl.fkStockLocationId = sloc.pkStockLocationId
+WHERE si.bLogicalDelete = 0 AND sl.Quantity > 0 AND (si.ItemNumber LIKE '%-NOB' OR si.ItemNumber LIKE '%-ULN' OR
+si.ItemNumber LIKE '%-UVG' OR si.ItemNumber LIKE '%-OUVG' OR si.ItemNumber LIKE '%-AUVG' OR si.ItemNumber LIKE '%-OUG' 
+OR si.ItemNumber LIKE '%-AUG' OR si.ItemNumber LIKE '%-UG' OR si.ItemNumber LIKE '%-UA' ) AND si.ItemNumber NOT LIKE 'SAM%' AND sloc.Location = 'Default'
+)
+SELECT FIN.SKU, FIN.Title, FIN.Brand, FIN.Quantity, FIN.EBAY, FIN.BC, FIN.AMAZON
+FROM FIN
+WHERE FIN.AMAZON is null AND FIN.Title NOT LIKE 'Speck%iPhone%' AND FIN.Title NOT LIKE 'Speck%Galaxy S%' AND FIN.Title NOT LIKE 'Speck%Motorola Droid%'
