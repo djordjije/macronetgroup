@@ -40,3 +40,4 @@ OR si.ItemNumber LIKE '%-AUG' OR si.ItemNumber LIKE '%-UG' OR si.ItemNumber LIKE
 SELECT FIN.SKU, FIN.Title, FIN.Brand, FIN.Quantity, FIN.EBAY, FIN.BC, FIN.AMAZON
 FROM FIN
 WHERE FIN.AMAZON is null AND FIN.Title NOT LIKE 'Speck%iPhone%' AND FIN.Title NOT LIKE 'Speck%Galaxy S%' AND FIN.Title NOT LIKE 'Speck%Motorola Droid%'
+AND FIN.Title NOT LIKE 'Speck%Motorola Droid%'
