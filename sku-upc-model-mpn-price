@@ -20,8 +20,8 @@ FROM StockItem si
 LEFT OUTER JOIN StockItem_ExtendedProperties siep on si.pkStockItemID = siep.fkStockItemId
 WHERE si.bLogicalDelete=0 AND siep.ProperyName LIKE 'Model'
 )
-SELECT si.ItemNumber AS [SKU], si.ItemTitle AS [Title], UPCS.UPC,
-MPNS.MPN, MODEL.Model, si.RetailPrice AS [Retail Price]
+SELECT si.ItemNumber AS [SKU], si.ItemTitle AS [Title],
+MPNS.MPN, UPCS.UPC, MODEL.Model, si.RetailPrice AS [Retail Price]
 FROM StockItem si
 LEFT OUTER JOIN UPCS on si.ItemNumber = UPCS.SKU 
 LEFT OUTER JOIN MPNS on si.ItemNumber = MPNS.SKU
