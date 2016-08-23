@@ -1,0 +1,29 @@
+;WITH UPCS AS
+(
+SELECT DISTINCT si.ItemNumber AS 'SKU', si.ItemTitle AS 'Title', siep.ProperyValue AS 'UPC'
+FROM StockItem si
+LEFT OUTER JOIN StockItem_ExtendedProperties siep on si.pkStockItemID = siep.fkStockItemId
+WHERE si.bLogicalDelete=0 AND siep.ProperyName LIKE 'UPC'
+),
+
+MPNS AS
+(
+SELECT DISTINCT si.ItemNumber AS 'SKU', si.ItemTitle AS 'Title', siep.ProperyValue AS 'MPN'
+FROM StockItem si
+LEFT OUTER JOIN StockItem_ExtendedProperties siep on si.pkStockItemID = siep.fkStockItemId
+WHERE si.bLogicalDelete=0 AND siep.ProperyName LIKE 'MPN'
+),
+MODEL AS
+(
+SELECT DISTINCT si.ItemNumber AS 'SKU', si.ItemTitle AS 'Title', siep.ProperyValue AS 'Model'
+FROM StockItem si
+LEFT OUTER JOIN StockItem_ExtendedProperties siep on si.pkStockItemID = siep.fkStockItemId
+WHERE si.bLogicalDelete=0 AND siep.ProperyName LIKE 'Model'
+)
+SELECT si.ItemNumber AS [SKU], si.ItemTitle AS [Title],
+MPNS.MPN, MODEL.Model, si.RetailPrice AS [Retail Price]
+FROM StockItem si
+LEFT OUTER JOIN UPCS on si.ItemNumber = UPCS.SKU 
+LEFT OUTER JOIN MPNS on si.ItemNumber = MPNS.SKU
+LEFT OUTER JOIN MODEL on si.Itemnumber = MODEL.SKU
+WHERE si.bLogicalDelete = 0
