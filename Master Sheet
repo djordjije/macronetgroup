@@ -1,0 +1,75 @@
+;WITH SIN AS (SELECT sc.fkStockItemId, sc.StockNow, DATEDIFF("d", sc.StockChangeDateTime, GETDATE()) AS 'Days',
+row_number() over (PARTITION BY sc.fkStockItemId ORDER BY DATEDIFF("d", sc.StockChangeDateTime, GETDATE())) rn
+FROM [StockChange] sc),
+
+SIN2 AS (SELECT SIN.fkStockItemId, SIN.StockNow
+FROM SIN
+WHERE rn = 2),
+
+PRICE AS (SELECT si.ItemNumber AS 'SKU',
+DATEDIFF("d", p.LastChangeDate, GETDATE()) AS Days
+FROM StockItem si
+LEFT OUTER JOIN StockItem_Pricing p on si.pkStockItemID = p.fkStockItemId
+WHERE si.bLogicalDelete = 0 and p.SubSource = 'EBAY0_US'),
+
+SINFIN AS (SELECT si.ItemNumber as 'SKU', SIN.StockNow,
+SIN.Days
+FROM StockItem si
+LEFT OUTER JOIN SIN on si.pkStockItemID = SIN.fkStockItemId
+LEFT OUTER JOIN SIN2 on si.pkStockItemID = SIN2.fkStockItemId
+WHERE si.bLogicalDelete = 0 AND rn = 1 AND SIN.StockNow > 0 AND SIN2.StockNow = 0),
+
+TEN AS
+(
+SELECT si.ItemNumber AS [SKU], count(o.norderID) AS [# of orders]
+FROM [Order] o
+INNER JOIN OrderItem oi on o.pkOrderID = oi.fkOrderID
+LEFT OUTER JOIN StockItem si on si.pkstockItemId = oi.fkStockItemID_processed
+WHERE o.dReceievedDate > DATEADD(day, -10, GETDATE())
+GROUP BY si.ItemNumber
+),
+PRE_COST AS
+(
+SELECT si.ItemNumber AS 'SKU', DATEDIFF("d", p.DateOfDelivery, GETDATE()) AS Days, CASE WHEN pi.Quantity = 0 THEN 0 ELSE pi.Cost/pi.Quantity END AS 'Item Cost', row_number() over (PARTITION BY si.ItemNumber ORDER BY DATEDIFF("d", p.DateOfDelivery, GETDATE()) ) rn
+FROM Purchase p
+LEFT OUTER JOIN PurchaseItem pi ON p.pkPurchaseID = pi.fkPurchasId
+LEFT OUTER JOIN StockItem si on pi.fkStockitemID = si.pkStockitemID
+WHERE si.bLogicalDelete = 0
+),
+COST AS
+(
+SELECT PRE_COST.SKU, PRE_COST.[Item Cost] AS 'UnitCost'
+FROM PRE_COST
+WHERE rn = 1
+),
+CTE AS (
+SELECT si.ItemNumber AS [SKU],
+DATEDIFF("d",o.dReceievedDate, GETDATE()) AS 'DaysLastSold',
+row_number() over (PARTITION BY si.ItemNumber, si.RetailPrice
+ORDER BY o.dReceievedDate DESC) rn,
+oi.fpricePerUnit AS [LastSoldPrice]
+FROM [Order] o
+INNER JOIN OrderItem oi
+on o.pkOrderID = oi.fkOrderID
+LEFT OUTER JOIN StockItem si
+on si.pkstockItemId = oi.fkStockItemID_processed
+LEFT OUTER JOIN StockItem_Pricing p on si.pkStockItemID = p.fkStockItemId
+WHERE si.bLogicalDelete = 0
+),
+CTEFIN AS (SELECT CTE.SKU, CTE.DaysLastSold, CTE.LastSoldPrice
+FROM CTE
+WHERE rn = 1)
+
+SELECT si.ItemNumber AS 'SKU', si.ItemTitle as 'Title', TEN.[# of orders] AS [Sold1-10],
+CTEFIN.DaysLastSold, CTEFIN.LastSoldPrice,
+si.Weight, sl.Quantity AS 'Available', COST.UnitCost, si.RetailPrice,
+SINFIN.Days AS [Went Positive], PRICE.Days AS [LastPriceUpdate]
+FROM StockItem si
+LEFT OUTER JOIN SINFIN on si.ItemNumber = SINFIN.SKU
+LEFT OUTER JOIN PRICE on si.ItemNumber = PRICE.SKU
+LEFT OUTER JOIN StockLevel sl on si.pkStockItemID = sl.fkStockItemId
+LEFT OUTER JOIN TEN on si.ItemNumber = TEN.SKU
+LEFT OUTER JOIN StockLocation SLoc on sl.fkStockLocationId = SLoc.pkStockLocationId
+LEFT OUTER JOIN COST on si.ItemNumber = COST.SKU
+LEFT OUTER JOIN CTEFIN on si.ItemNumber = CTEFIN.SKU
+WHERE si.bLogicalDelete = 0 AND SLoc.Location = 'Default'
