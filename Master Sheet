@@ -61,7 +61,7 @@ FROM CTE
 WHERE rn = 1)
 
 SELECT si.ItemNumber AS 'SKU', si.ItemTitle as 'Title', 
-CASE WHEN TEN.[# of orders] IS NULL THEN 999999 ELSE TEN.[# of orders] END AS [Sold1-10],
+CASE WHEN TEN.[# of orders] IS NULL THEN -1 ELSE TEN.[# of orders] END AS [Sold1-10],
 CTEFIN.DaysLastSold, CTEFIN.LastSoldPrice,
 si.Weight, sl.Quantity AS 'Available', COST.UnitCost, si.RetailPrice,
 SINFIN.Days AS [DaysAgoInventoryWentPositive], PRICE.Days AS [LastPriceUpdate],
