@@ -63,7 +63,8 @@ WHERE rn = 1)
 SELECT si.ItemNumber AS 'SKU', si.ItemTitle as 'Title', TEN.[# of orders] AS [Sold1-10],
 CTEFIN.DaysLastSold, CTEFIN.LastSoldPrice,
 si.Weight, sl.Quantity AS 'Available', COST.UnitCost, si.RetailPrice,
-SINFIN.Days AS [Went Positive], PRICE.Days AS [LastPriceUpdate]
+SINFIN.Days AS [DaysAgoInventoryWentPositive], PRICE.Days AS [LastPriceUpdate],
+DATEDIFF("d", si.CreationDate, GETDATE()) AS [Days Ago Created]
 FROM StockItem si
 LEFT OUTER JOIN SINFIN on si.ItemNumber = SINFIN.SKU
 LEFT OUTER JOIN PRICE on si.ItemNumber = PRICE.SKU
