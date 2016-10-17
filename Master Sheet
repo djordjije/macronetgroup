@@ -60,7 +60,8 @@ CTEFIN AS (SELECT CTE.SKU, CTE.DaysLastSold, CTE.LastSoldPrice
 FROM CTE
 WHERE rn = 1)
 
-SELECT si.ItemNumber AS 'SKU', si.ItemTitle as 'Title', TEN.[# of orders] AS [Sold1-10],
+SELECT si.ItemNumber AS 'SKU', si.ItemTitle as 'Title', 
+CASE WHEN TEN.[# of orders] IS NULL THEN 0 ELSE TEN.[# of orders] END AS [Sold1-10],
 CTEFIN.DaysLastSold, CTEFIN.LastSoldPrice,
 si.Weight, sl.Quantity AS 'Available', COST.UnitCost, si.RetailPrice,
 SINFIN.Days AS [DaysAgoInventoryWentPositive], PRICE.Days AS [LastPriceUpdate],
