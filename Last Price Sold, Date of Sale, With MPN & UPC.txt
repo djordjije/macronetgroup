@@ -72,25 +72,23 @@ LEFT OUTER JOIN StockItem si on si.pkstockItemId = oi.fkStockItemID_processed
 WHERE o.dReceievedDate > DATEADD(day, -7, GETDATE())
 GROUP BY si.ItemNumber
 ),
-PRE_COST AS 
+PRE_SVALUE AS
 (
-SELECT si.ItemNumber AS 'SKU', DATEDIFF("d", p.DateOfDelivery, GETDATE()) AS Days, CASE WHEN pi.Quantity = 0 THEN 0 ELSE pi.Cost/pi.Quantity END AS 'Item Cost', row_number() over (PARTITION BY si.ItemNumber ORDER BY DATEDIFF("d", p.DateOfDelivery, GETDATE()) ) rn
-FROM Purchase p
-LEFT OUTER JOIN PurchaseItem pi ON p.pkPurchaseID = pi.fkPurchasId
-LEFT OUTER JOIN StockItem si on pi.fkStockitemID = si.pkStockitemID
-WHERE si.bLogicalDelete = 0
-
+SELECT si.ItemNumber as 'SKU', CONVERT(DATE, sc.StockChangeDateTime) as Date, sc.StockNow, sc.StockValue, row_number() over (PARTITION BY si.ItemNumber ORDER BY CONVERT(DATE, sc.StockChangeDateTime) DESC) rn
+FROM StockItem si
+LEFT OUTER JOIN StockChange sc on si.pkStockItemID = sc.fkStockItemId
+WHERE si.bLogicalDelete=0 AND si.ItemTitle not like 'Lycamobile%'
 ),
 COST AS
 (
-SELECT PRE_COST.SKU, PRE_COST.[Item Cost]
-FROM PRE_COST
-WHERE rn = 1
+SELECT PRE_SVALUE.SKU, PRE_SVALUE.StockValue / PRE_SVALUE.StockNow AS 'UnitCost'
+FROM PRE_SVALUE
+WHERE rn = 1 AND PRE_SVALUE.StockNow > 0
 )
 
 SELECT DISTINCT CTE.SKU, CTE.Title, MPNS.Model AS 'MPN', UPCS.UPC AS 'UPC', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
 of orders] AS [Sold1-15], THIRTY.[# of orders] AS [Sold1-30], SIXTY.[# of orders] AS [Sold1-60],
-CTE.[Days Last Sold] AS 'DaysLastSold', CTE.LastSoldPrice, CTE.Weight, CTE.InventoryLevel AS 'Available', COST.[Item Cost] AS 'UnitCost',  CTE.MSRP AS 'RetailPrice', CTE.[Days Ago Created] AS 'DaysAgoCreated'
+CTE.[Days Last Sold] AS 'DaysLastSold', CTE.LastSoldPrice, CTE.Weight, CTE.InventoryLevel AS 'Available', COST.UnitCost,  CTE.MSRP AS 'RetailPrice', CTE.[Days Ago Created] AS 'DaysAgoCreated'
 FROM CTE 
 LEFT OUTER JOIN UPCS on CTE.SKU = UPCS.SKU 
 LEFT OUTER JOIN MPNS on CTE.SKU = MPNS.SKU
