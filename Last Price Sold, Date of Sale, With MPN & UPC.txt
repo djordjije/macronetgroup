@@ -74,16 +74,19 @@ GROUP BY si.ItemNumber
 ),
 PRE_SVALUE AS
 (
-SELECT si.ItemNumber as 'SKU', CONVERT(DATE, sc.StockChangeDateTime) as Date, sc.StockNow, sc.StockValue, row_number() over (PARTITION BY si.ItemNumber ORDER BY CONVERT(DATE, sc.StockChangeDateTime) DESC) rn
+SELECT si.ItemNumber as 'SKU', si.RetailPrice, CONVERT(DATE, sc.StockChangeDateTime) as Date, sc.StockNow, sc.StockValue, row_number() over (PARTITION BY si.ItemNumber ORDER BY CONVERT(DATE, sc.StockChangeDateTime) DESC) rn
 FROM StockItem si
 LEFT OUTER JOIN StockChange sc on si.pkStockItemID = sc.fkStockItemId
 WHERE si.bLogicalDelete=0 AND si.ItemTitle not like 'Lycamobile%'
 ),
 COST AS
 (
-SELECT PRE_SVALUE.SKU, PRE_SVALUE.StockValue / PRE_SVALUE.StockNow AS 'UnitCost'
-FROM PRE_SVALUE
-WHERE rn = 1 AND PRE_SVALUE.StockNow > 0
+  SELECT PRE_SVALUE.SKU,
+  CASE
+  WHEN PRE_SVALUE.StockValue / PRE_SVALUE.StockNow = 0 THEN PRE_SVALUE.RetailPrice * 0.35 ELSE
+  PRE_SVALUE.StockValue / PRE_SVALUE.StockNow END AS 'UnitCost'
+  FROM PRE_SVALUE
+  WHERE rn = 1 AND PRE_SVALUE.StockNow > 0
 )
 
 SELECT DISTINCT CTE.SKU, CTE.Title, MPNS.Model AS 'MPN', UPCS.UPC AS 'UPC', SEVEN.[# of orders] AS [Sold 1-7], FIFTEEN.[#
